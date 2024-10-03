@@ -1,3 +1,10 @@
 data/*
 out/*
 unimodality_pipeline.egg-info/*
+unimodality_pipeline/__pycache__
+unimodality_pipeline/datasets/__pycache__
+unimodality_pipeline/models/__pycache__
+unimodality_pipeline/modules/__pycache__
+unimodality_pipeline/tools/__pycache__
+unimodality_pipeline/tests/__pycache__
+
