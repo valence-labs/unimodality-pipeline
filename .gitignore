@@ -1,1 +1,3 @@
 data/*
+out/*
+unimodality_pipeline.egg-info/*
