@@ -1,6 +1,6 @@
 from . import (
     datasets,
     models,
-    modules,
+    setups,
     tools
 )

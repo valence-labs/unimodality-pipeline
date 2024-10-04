@@ -2,22 +2,13 @@ import torch
 import logging
 import torch.nn as nn
 from typing import Optional, Dict, Any
-from itertools import chain
-
-from lightning import LightningModule
-from torch.utils.data import DataLoader
-
+from pytorch_lightning import LightningModule
 from ..tools.clip_losses import ClipLoss
-from ..datasets.basic_dataset import (
-    MultimodalDataset,
-    multimodal_collate_fn
-)
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     datefmt="%m/%d/%Y %H:%M:%S",
     level=logging.INFO,
-    #level=logging.DEBUG,
     )
 logger = logging.getLogger(__name__)
 
@@ -27,10 +18,10 @@ class ClipModule(LightningModule):
         self, 
         tx_encoder: Optional[nn.Module], 
         ph_encoder: Optional[nn.Module],
-        h_params: Dict[str, Any],
+        hparams: Dict[str, Any],
         ):
         super().__init__()
-        self.save_hyperparameters(h_params)
+        self.save_hyperparameters(hparams)
         
         # Encoders
         self.tx_encoder = tx_encoder
@@ -43,7 +34,7 @@ class ClipModule(LightningModule):
         self.ph_encoder_train_mode = (self.ph_encoder is not None)
         
         # Clip loss
-        self.loss = ClipLoss(self.h_params.gather_distributed, self.h_params.normalize, self.h_params.inv_tau)
+        self.loss = ClipLoss(self.hparams.gather_distributed, self.hparams.normalize, self.hparams.temperature)
     
     def set_encoder_mode(self, encoder="ph",  train_mode=True):
         encoder_name = encoder.lower()
@@ -64,69 +55,57 @@ class ClipModule(LightningModule):
                     p.requires_grad = train_mode
                 self.tx_encoder_train_mode = train_mode
     
-    def setup(self):
-        logger.info('>> Setup():: Loading datasets ...')
-        self.train_dataset = MultimodalDataset(self.h_params.tx_data_path, self.h_params.ph_data_path, self.h_params.obsm_key, mode='train')
-        self.val_dataset = MultimodalDataset(self.h_params.tx_data_path, self.h_params.ph_data_path,  self.h_params.obsm_key, mode='test')
-    
-    def teardown(self):
-        logger.info('>> Teardown():: ...')
+    def setup(self, stage=None):
         pass
     
-    def train_dataloader(self):
-        return DataLoader(self.train_dataset,
-                          collate_fn=multimodal_collate_fn,
-                          shuffle=True,
-                          num_workers=self.h_params.num_workers,
-                          batch_size=self.h_params.batch_size,
-                          pin_memory=True,
-                          drop_last=True)
+    def teardown(self, stage=None):
+        pass
+    
+    def forward(self, x):
+        # Methods takes only tx embeddings 
+        return self.tx_encoder(x) if (self.tx_encoder is not None) else self.ph_encoder(x)
 
-    def val_dataloader(self):
-        return DataLoader(self.val_dataset,
-                          collate_fn=multimodal_collate_fn,
-                          shuffle=True,
-                          num_workers=self.hparams.num_workers,
-                          batch_size=self.h_params.batch_size,
-                          pin_memory=True,
-                          drop_last=True)
-
-        
         
     def training_step(self, batch, batch_idx):
         # training_step defines the train loop.
         x_tx, x_ph = batch
+        
         loss = self.loss(
-            self.tx_encoder(x_tx[batch_idx]) if self.tx_encoder is not None else x_tx[batch_idx],
-            self.ph_encoder(x_ph[batch_idx]) if self.ph_encoder is not None else x_ph[batch_idx],
+            self.tx_encoder(x_tx) if self.tx_encoder is not None else x_tx,
+            self.ph_encoder(x_ph) if self.ph_encoder is not None else x_ph,
         ).mean()
-        loss = self.all_gather(loss)
-        self.log('train_loss', loss.mean())
+        if self.hparams.gather_distributed == True:
+            loss = self.all_gather(loss).mean()
+        self.log('train_loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x_tx, x_ph = batch
         loss = self.loss(
-            self.tx_encoder(x_tx[batch_idx]) if self.tx_encoder is not None else x_tx[batch_idx],
-            self.ph_encoder(x_ph[batch_idx]) if self.ph_encoder is not None else x_ph[batch_idx],
-        )
-        loss = self.all_gather(loss)
-        self.log('val_loss', loss.mean())
+            self.tx_encoder(x_tx) if self.tx_encoder is not None else x_tx,
+            self.ph_encoder(x_ph) if self.ph_encoder is not None else x_ph,
+        ).mean()
+        if self.hparams.gather_distributed == True:
+            loss = self.all_gather(loss).mean()
+        self.log('val_loss', loss)
         return loss
+    
+    def predition_step(self, batch, batch_idx):
+        return self.tx_encoder(batch) if self.tx_encoder is not None else batch
     
     def configure_optimizers(self):
         parameters = []
         if self.ph_encoder_train_mode == True:
-            parameters.append({"params": self.ph_encoder.parameters(), "lr": self.h_params.ph_encoder_lr})
+            parameters.append({"params": self.ph_encoder.parameters(), "lr": self.hparams.ph_encoder_lr})
         if self.tx_encoder_train_mode == True:
-            parameters.append({"params": self.tx_encoder.parameters(), "lr": self.h_params.tx_encoder_lr})
+            parameters.append({"params": self.tx_encoder.parameters(), "lr": self.hparams.tx_encoder_lr})
         
-        optimizer = torch.optim.Adam(parameters, weight_decay=self.h_params.weight_decay)
+        optimizer = torch.optim.Adam(parameters, weight_decay=self.hparams.weight_decay)
         lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
             mode="min",
-            patience=self.h_params.lr_scheduler_patience,
-            factor=self.h_params.lr_scheduler_factor,
+            patience=self.hparams.lr_scheduler_patience,
+            factor=self.hparams.lr_scheduler_factor,
         )
         return {
             "optimizer": optimizer,

@@ -18,14 +18,35 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+
+class TxDataset(Dataset):
+    def __init__(self, anndata_file, obsm_key, filter_controls = False, n_samples=None):
+        self.obsm_key = obsm_key
+        
+        # Load anndata file
+        self.tx_data = anndata.read_h5ad(anndata_file)
+
+        if filter_controls == True:
+            self.tx_data = self.tx_data[self.tx_data.obs['has_control'] == False]
+        if (n_samples is not None)  and (len(self.tx_data.obs) >  n_samples):
+            self.tx_data = self.tx_data[:n_samples,:]
+            logger.info(f"Keeping {len(self.tx_data)} samples...")
+        self.indices = self.tx_data.obs.index.astype(int).tolist()
+    def __len__(self):
+        return len(self.tx_data)
+
+    def __getitem__(self, idx):
+        tx_idx = self.indices[idx]
+        return torch.tensor(self.tx_data.obsm[self.obsm_key][tx_idx], dtype=torch.float32)
+
+
+
 class MultimodalDataset(Dataset):
     def __init__(self, anndata_file, parquet_file, obsm_key, emb_align="pheno_embedding", mode='train'):
-        logger.info("Initializing the MultimodalDataset...")
         self.emb_align = emb_align
         self.obsm_key = obsm_key
         
         # Load anndata file
-        logger.info("Loading Tx file...")
         self.tx_data = anndata.read_h5ad(anndata_file)
 
         self.tx_data = self.tx_data[self.tx_data.obs['has_control'] == False]
@@ -38,7 +59,6 @@ class MultimodalDataset(Dataset):
 
         
         # Load parquet file
-        logger.info("Loading Ph file...")
         self.ph_data = pd.read_parquet(parquet_file)
 
         self.create_ph_mapping()
@@ -49,7 +69,6 @@ class MultimodalDataset(Dataset):
 
 
     def create_ph_mapping(self):
-        logger.info("Creating phenotype mapping...")
         # Convert embeddings list into a numpy array for vectorized operations
         self.ph_data[self.emb_align] = self.ph_data[self.emb_align].apply(np.array)
 
@@ -65,7 +84,6 @@ class MultimodalDataset(Dataset):
                 self.ph_mapping[(smiles, concentration)].append(torch.tensor(row[self.emb_align], dtype=torch.float32))
             else :
                 self.ph_mapping[(smiles, concentration)] = [torch.tensor(row[self.emb_align], dtype=torch.float32)]
-        logger.info(f"Phenotype mapping created with {len(self.ph_mapping)} entries.")
             
 
     def match_indices(self):

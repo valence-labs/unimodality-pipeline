@@ -2,6 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import logging
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.INFO,
+    )
+logger = logging.getLogger(__name__)
+
 
 
 class ClipLoss(torch.nn.Module):
@@ -24,8 +32,8 @@ class ClipLoss(torch.nn.Module):
     ) -> (torch.Tensor):
         """Forward pass of the CLIP loss."""
         if self.normalize:
-            ph_rep = F.normalize(ph_rep, dim=1)
-            mol_rep = F.normalize(mol_rep, dim=1)
+            tx_rep = F.normalize(tx_rep, dim=-1)
+            ph_rep = F.normalize(ph_rep, dim=-1)
 
         logits = (tx_rep @ ph_rep.T) / self.temperature
         ph_similarity = ph_rep @ ph_rep.T
@@ -33,8 +41,8 @@ class ClipLoss(torch.nn.Module):
         targets = F.softmax(
             (ph_similarity + tx_similarity) / 2 * self.temperature, dim=-1
         )
-        ph_loss = (-targets.T * self.log_softmax(logits.T)).sum(1)
-        tx_loss = (-targets * self.log_softmax(logits)).sum(1)
+        ph_loss = (-targets.T * self.log_softmax(logits.T)).sum(-1)
+        tx_loss = (-targets * self.log_softmax(logits)).sum(-1)
         return (tx_loss + ph_loss) / 2.0
 
 
