@@ -98,5 +98,5 @@ ignore = [
     "E722",
 ]
 # Exclude a variety of commonly ignored directories.
-exclude = [".git", "docs", "_notebooks"]
+exclude = [".git", "scripts", "notebooks"]
 ignore-init-module-imports = true
