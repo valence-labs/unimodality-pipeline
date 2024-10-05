@@ -42,7 +42,7 @@ class ClipLoss(torch.nn.Module):
         if self.no_ph_head:
             logits = (tx_rep @ ph_rep @ ph_rep.T) / self.temperature
         elif self.no_tx_head:
-            logits = (ph_rep @ ph_rep.T @ tx_rep) / self.temperature
+            logits = (ph_rep @ tx_rep @ tx_rep.T) / self.temperature
         else:
             # Normal case
             logits = (tx_rep @ ph_rep.T) / self.temperature
