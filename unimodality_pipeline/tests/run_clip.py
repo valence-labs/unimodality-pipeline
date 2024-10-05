@@ -12,7 +12,6 @@ from pytorch_lightning.loggers import WandbLogger
 
 from lightning.pytorch.strategies import DDPStrategy
 
-from unimodality_pipeline.models.mlp import MLP
 from unimodality_pipeline.setups.clip_module import ClipModule
 from unimodality_pipeline.datasets.basic_dataset_module import MultiModalDataModule
 from unimodality_pipeline.tools.constants import ACTIVATIONS_KEYS
@@ -83,22 +82,7 @@ def main():
     logger.info(f"######################## Starting training script")
 
     logger.info(f">> Initializing the training module ...")
-    system = ClipModule(
-        tx_encoder = None if args.tx_disabled else MLP(
-            args.tx_input_size, 
-            args.tx_hidden_dims,
-            args.tx_activations, 
-            args.tx_output_size,
-            args.tx_output_activation
-            ) , 
-        ph_encoder = None if args.ph_disabled else MLP(
-            args.ph_input_size, 
-            args.ph_hidden_dims,
-            args.ph_activations, 
-            args.ph_output_size,
-            args.ph_output_activation
-            ),
-        hparams = args)
+    system = ClipModule(hparams = args)
     
     logger.info(f">> Initializing the data module ...")
     data_module = MultiModalDataModule(
@@ -114,9 +98,9 @@ def main():
     logger.info(f">> Setup encoders training mode ...")
     ## Freezing one encoder at a time
     if args.tx_frozen:
-        system.ph_encoder_train_mode(encoder="tx",  train_mode=False)
+        system.set_encoder_mode(encoder="tx",  train_mode=False)
     if args.ph_frozen:
-        system.ph_encoder_train_mode(encoder="ph",  train_mode=False)
+        system.set_encoder_mode(encoder="ph",  train_mode=False)
 
     logger.info(f">> Preparing callbacks ...")
     ckpt_cb = ModelCheckpoint(
@@ -154,7 +138,7 @@ def main():
     trainer.fit(system, datamodule=data_module, ckpt_path=args.ckpt_path)
     
     logger.info(f">> Saving last checkpoint ...")
-    trainer.save_checkpoint(os.path.join(args.output_dir, "best_ckpt.ckpt"), weights_only=True)
+    trainer.save_checkpoint(os.path.join(args.output_dir, "best_ckpt.ckpt"), weights_only=False)
 
     if args.do_predict == True:
         logger.info(f">> Predicting ...")

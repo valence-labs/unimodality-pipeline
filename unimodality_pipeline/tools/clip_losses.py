@@ -18,12 +18,16 @@ class ClipLoss(torch.nn.Module):
             self,
             gather_distributed: bool = False,
             normalize: bool = True,
-            temperature: float = 4.6052
+            temperature: float = 4.6052,
+            no_tx_head: bool = False,
+            no_ph_head: bool = False,
     ):
         super().__init__()
         self.normalize = normalize
         self.temperature = temperature
         self.log_softmax = nn.LogSoftmax(dim=-1)
+        self.no_tx_head = no_tx_head
+        self.no_ph_head = no_ph_head
 
     def forward(
             self,
@@ -31,11 +35,17 @@ class ClipLoss(torch.nn.Module):
             ph_rep: torch.Tensor,
     ) -> (torch.Tensor):
         """Forward pass of the CLIP loss."""
+        ## TODO: remove the part below and use projection heads when one encoder is missing 
         if self.normalize:
             tx_rep = F.normalize(tx_rep, dim=-1)
             ph_rep = F.normalize(ph_rep, dim=-1)
-
-        logits = (tx_rep @ ph_rep.T) / self.temperature
+        if self.no_ph_head:
+            logits = (tx_rep @ ph_rep @ ph_rep.T) / self.temperature
+        elif self.no_tx_head:
+            logits = (ph_rep @ ph_rep.T @ tx_rep) / self.temperature
+        else:
+            # Normal case
+            logits = (tx_rep @ ph_rep.T) / self.temperature
         ph_similarity = ph_rep @ ph_rep.T
         tx_similarity = tx_rep @ tx_rep.T
         targets = F.softmax(

@@ -1,6 +1,7 @@
 data/*
 out/*
 wandb/*
+lightning_logs/*
 unimodality_pipeline.egg-info/*
 unimodality_pipeline/__pycache__
 unimodality_pipeline/datasets/__pycache__

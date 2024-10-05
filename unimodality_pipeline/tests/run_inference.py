@@ -23,6 +23,7 @@ def main():
     parser.add_argument('--num_workers', type=int, help='Number of workers in dataloaders', default=2)
     parser.add_argument('--batch_size', type=int, help='Batch size', default=128)
     parser.add_argument('--output_dir', type=str, help='Path where to save embeddings',  default='./output')            
+    parser.add_argument('--n_samples', type=int, help='Number of samples to evaluate',  default=None)            
     args = parser.parse_args()
 
     ### Logging
@@ -49,6 +50,7 @@ def main():
         evaluation_tx_obsm_key = args.obsm_key, 
         batch_size = args.batch_size, 
         num_workers = args.num_workers, 
+        evaluation_tx_n_samples = args.n_samples,
     )
     
     logger.info(f">> Instantiating trainer...")
@@ -61,7 +63,8 @@ def main():
     logger.info(f">> Predicting...")
     predictions = trainer.predict(system, datamodule=data_module)
     
-    output_file = args.exp_name if f"{args.exp_name}.pt" is not None else f"weights_{secrets.token_urlsafe(8)}.pt"
+    output_file =  f"{args.exp_name}.pt" if args.exp_name is not None else f"weights_{secrets.token_urlsafe(8)}.pt"
+    os.makedirs(args.output_dir, exist_ok=True)
     output_file = os.path.join(args.output_dir, output_file)
     logger.info(f">> Saving predictions to '{output_file}'...")
     torch.save(predictions, f'{output_file}')

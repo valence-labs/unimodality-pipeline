@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=train-simple-clip
+#SBATCH --job-name=train-simple-clip-disabled-tx
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=32
-#SBATCH --gpus-per-node=H100:1
-#SBATCH --gpus-per-task=H100:1
-#SBATCH --mem=50G
-#SBATCH --partition=long
-#SBATCH --time=3:00:00
-#SBATCH --output=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/train-simple-clip.out
-#SBATCH --error=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/train-simple-clip.out 
+#SBATCH --gpus-per-node=h100:1
+#SBATCH --gpus-per-task=h100:1
+#SBATCH --mem=512G
+#SBATCH --time=1:00:00
+#SBATCH --output=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/train-simple-clip-disabled-tx.out
+#SBATCH --error=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/train-simple-clip-disabled-tx.out 
 
 # In a SLURM job, you CANNOT use `conda activate` and instead MUST use:
 #source ${HOME_DIR}/.bashrc
@@ -17,7 +16,7 @@
 #mamba activate unimodality
 
 ### General
-export EXP_NAME="train-simple-clip"
+export EXP_NAME="train-simple-clip-disabled-tx"
 
 
 
@@ -76,7 +75,6 @@ export WEIGHT_DECAY=1e-3
 export LR_SCHEDULER_PATIENCE=5
 export LR_SCHEDULER_FACTOR=0.1
 
-export WORLD_SIZE=1
 export RUNNER_ARGS=" \
     --tx_data_path ${TX_DATA_PATH} \
     --ph_data_path ${PH_DATA_PATH} \
@@ -95,8 +93,9 @@ export RUNNER_ARGS=" \
     --wandb_name ${WANDB_PROJECT} \
     --wandb_dir ${WANDB_DATA_DIR} \
     --output_dir ${OUTPUT_DIR} \
-    --do_predict \
+    --tx_disabled \
     "
+
 
 
 export PYTHON_LAUNCHER="python \
@@ -106,5 +105,4 @@ export PYTHON_LAUNCHER="python \
 # This step is necessary because accelerate launch does not handle multiline arguments properly
 export CMD="${PYTHON_LAUNCHER} ${RUNNER} ${RUNNER_ARGS}" 
 echo "===>>> Running command '${CMD}'"
-#srun --jobid $SLURM_JOBID --export=ALL  $CMD
-$CMD
+srun --jobid $SLURM_JOBID --export=ALL  $CMD

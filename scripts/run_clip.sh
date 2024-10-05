@@ -75,7 +75,6 @@ export WEIGHT_DECAY=1e-3
 export LR_SCHEDULER_PATIENCE=5
 export LR_SCHEDULER_FACTOR=0.1
 
-export WORLD_SIZE=1
 export RUNNER_ARGS=" \
     --tx_data_path ${TX_DATA_PATH} \
     --ph_data_path ${PH_DATA_PATH} \
@@ -96,7 +95,6 @@ export RUNNER_ARGS=" \
     --output_dir ${OUTPUT_DIR} \
     --do_predict \
     "
-
 
 export PYTHON_LAUNCHER="python \
 "

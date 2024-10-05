@@ -3,7 +3,9 @@ import logging
 import torch.nn as nn
 from typing import Optional, Dict, Any
 from pytorch_lightning import LightningModule
+from ..models.mlp import MLP
 from ..tools.clip_losses import ClipLoss
+
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -16,17 +18,27 @@ logger = logging.getLogger(__name__)
 class ClipModule(LightningModule):
     def __init__(
         self, 
-        tx_encoder: Optional[nn.Module], 
-        ph_encoder: Optional[nn.Module],
         hparams: Dict[str, Any],
         ):
         super().__init__()
         self.save_hyperparameters(hparams)
         
         # Encoders
-        self.tx_encoder = tx_encoder
-        self.ph_encoder = ph_encoder
-
+        self.tx_encoder = None if self.hparams.tx_disabled else MLP(
+            self.hparams.tx_input_size, 
+            self.hparams.tx_hidden_dims,
+            self.hparams.tx_activations, 
+            self.hparams.tx_output_size,
+            self.hparams.tx_output_activation
+            )
+        self.ph_encoder = None if self.hparams.ph_disabled else MLP(
+            self.hparams.ph_input_size, 
+            self.hparams.ph_hidden_dims,
+            self.hparams.ph_activations, 
+            self.hparams.ph_output_size,
+            self.hparams.ph_output_activation
+            )
+        
         if self.tx_encoder is None and self.ph_encoder is None:
             raise ValueError(f"Both Tx and Img encoders are null. Please provide at least one model for either of them.")
 
@@ -34,7 +46,7 @@ class ClipModule(LightningModule):
         self.ph_encoder_train_mode = (self.ph_encoder is not None)
         
         # Clip loss
-        self.loss = ClipLoss(self.hparams.gather_distributed, self.hparams.normalize, self.hparams.temperature)
+        self.loss = ClipLoss(self.hparams.gather_distributed, self.hparams.normalize, self.hparams.temperature, self.hparams.tx_disabled, self.hparams.ph_disabled)
     
     def set_encoder_mode(self, encoder="ph",  train_mode=True):
         encoder_name = encoder.lower()
