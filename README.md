@@ -51,7 +51,7 @@ Regarding inference, replogle dataset has been modified by adding a random-float
 ## Quick dive in some python modules
 ### Datasets
 This module implements the necesary structures needed for data loading. The file `basic_dataset.py` contains regular `Dataset` classes. The file `basic_dataset_module.py` implements the data module inteded for the training module `ClipModule`. Below is a summary of its main methods:
-- __init__: constructor.
+- init: constructor.
 - setup: called each time the trainer enters un new stage ('fit', 'validate', 'predict'). Caller sets the parameter `stage` to the corresponding value. We use this method to instantiate datasets 'on demand' as we don't necessarily need them in all scenarios.
 - train_dataloader: returns the train set dataloader.
 - val_dataloader: returns the validation set dataloader.
@@ -62,7 +62,7 @@ There are of courses other methods defined in the `LightningDataModule` class th
 **Important note:** We used `setup` callbacks to load datasets because we don't need them all for training and inference. `prepare_dataset` callback can be used too, but unlike the former, it is called only once. `setup` is called at different stages of training, allowing for loading data only when it is needed.
 ### Setups
 The `clip_module.py` implements the unimodality models' training pipeline using the regular clip loss function. This file should be used as example to implement other training pipelines (such as `dino_module.py` and `simclr_module.py`). Below is the description of the main methods:
-- __init__: constructor of the class. Primarily used for saving the hyper parameters passed as argument (very important) as well as for building the models/other necessary structures. 
+- init: constructor of the class. Primarily used for saving the hyper parameters passed as argument (very important) as well as for building the models/other necessary structures. 
 - set_encoder_mode: used to set one of the encoders (phenomics, transcriptomics) to a frozen/trainable state.
 - setup: called everytime the trainer enters a new stage. Caller sets the parameter `stage` to the corresponding value.
 - teardown: called everytime the trainer leaves a stage. Caller sets the parameter `stage` to the corresponding value.
