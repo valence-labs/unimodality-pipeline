@@ -86,15 +86,15 @@ This folder contains python runners that are used for training and inference. Th
 
 ## Next steps
 The following sections describe some ideas regarding necessary/possible improvements that need to be brought to the current code.
-### datasets
+### Datasets
 Currently, there is a single complex data module `basic_dataset_module.py` that uses both classes `MultiModalDataset` and `TxDataset`. This data module is also used by inference script, in which case it does not load the training sets (works also for prediction set, which is not loaded if we do not want to predict during training). To do so, data reading logic was placed in `setup` callback, hence making it possible to load data only when you need it ('fit', 'validate' or 'predict' stages). As small improvement, we could split the logic and have multiple data modules instead. The main benefit would be to reduce the complexity of the datamodule classes, and use the `prepare_data` callback intead of `setup`. The main drawback is that we don't know (yet) whether pytorch-lightning's `Trainer` class supports multiple modules or not. Let's find out!.
-### models
+### Models
 There is room for improvement as we currently use simple MLPs as encoders. More complex architectures (GNNs, CNNs, pretrained models...) could be added as well. 
-### setups
+### Setups
 So far, only clip-loss training setup has been implemented. More baselines (SimClr, Dino, ...) are likely to be needed in a near future. Some features, such as optimizers and strategy, are currently hard-coded and should be dynamically instantiated instead (using passed arguments). We should be able to support different optimizers/hardware accelerators (such as Deepspeed). Once done, runners (`tests` folder) should be modified accordingly. 
-### tests
+### Tests
 Current runners use a specific lightning module (`ClipModule`) for both training and inference. We could add more runners as more training modules are implemented, or modify the current code to make a runner module-agnostic (using a dictionary for instance, we could have a mapping string <-> LightningModule class and dynamically instantiate a module using a string passed as argument...). 
-### tools
+### Tools
 This python module is intended for tools/utilities, namely loss functions and various routines. So far, only clip loss is implemented, but more losses can be added (the Hopfield variant, for instance). If many losses are to be used, a possible solution would be to group them by family (Clip loss family for instance), to avoid having exponentially-growing python files. At last but not least, **the existing ClipLoss class needs to be revisited**, as mentioned in previous sections.
 ## References
 - [Pytorch-Lightning website](https://lightning.ai/)
