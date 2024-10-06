@@ -24,7 +24,8 @@ So far, a simple clip-based model has been implemented to serve as example. To a
 2- Define a neural architecture in the `models` folder (or use the existing one(s)). Update the corresponding `__init__.py` in case of adding new classes/variables.
 3- Define a training module in the `setups` folder. Update the corresponding `__init__.py` iwith the name of the newly added module.
 4- Potentially add new functions in the `tools` folder (new loss functions/routines used by other modules). Update the corresponding `__init__.py` in case the newly added classes/variables need to be exposed.
-5- Add a runner script in the `tests` folder. The corresponding `__init__.py` does not need to be changed as the newly added functions are not exposed to other modules. However, in case of adding a new python module (folder) to the project `unimodality_pipeline`, the `__init__.py` needs to be changed to import the newly added module (in case the runner needs to import it of course).
+5- Add a runner script in the `tests` folder. The corresponding `__init__.py` does not need to be changed as the newly added functions are not exposed to other modules. <br />
+However, in case of adding a new python module (folder) to the project `unimodality_pipeline`, the `__init__.py` needs to be changed to import the newly added module (in case the runner needs to import it of course).
 
 ## Reproducing the current experiments
 ### Scripts
