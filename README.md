@@ -41,6 +41,7 @@ To run the regular clip training with inference on biohive, one has to run the c
 ```bash
 sbatch scripts/run_clip.sh
 ```
+<br />
 ### Data
 Two datasets are used for training. They can be found at the directory `/mnt/ps/home/CORP/ihab.bendidi/ondemand/yassir_unimodality`:
 1.  Transcriptomics: file `huvec_compounds.h5ad`.
