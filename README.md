@@ -36,6 +36,7 @@ Existing scripts can be root from the base directory of the project, either on i
 - run_clip_frozen_tx_encoder.sh: runs clip training script with frozen transcriptomics encoder (with/without inference).
 - run_clip_disabled_ph_encoder.sh: runs clip training script without phenomics encoder (with/without inference).
 - run_clip_disabled_tx_encoder.sh: runs clip training script without transcriptomics encoder (with/without inference).
+<br />
 To run the regular clip training with inference on biohive, one has to run the command:
 ```bash
 sbatch scripts/run_clip.sh
@@ -70,7 +71,7 @@ The `clip_module.py` implements the unimodality models' training pipeline using 
 - validation_step: defines how the validation loss and/or other metrics are computed. Also logs the results.
 - predition_step: calls the `forward` method.
 - configure_optimizers: implements the optimizers.
-
+<br />
 Not all of the `LightningModule` class' methods have been overriden by the `ClipModule` class. More information is available [here](link).
 **Important note:** Classes derived from `LightningModule` can have any number of parameters. However, passing only the hyperparameters as an  namespace, followed by a call to `save_hyperparameters` function ensures the ability of loading the module from a checkpoint without knowing its class attributes (see file `run_inference.py`, where the ClipModule class is loaded from disk). Failing to do so (such as passing complex structures which cannot be saved as parameters) prevents the loading of the module without calling its `__init__` method, hence necessitating the instantiation of the constructor's arguments. For this reason, we recommend to only pass the hyperparameters to the module and move the models' building logic inside it. 
 ### Tools
