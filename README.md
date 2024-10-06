@@ -1,5 +1,5 @@
 # Unimodality pipeline
-This repository contains the training/prediction code for the unimodality project. It is intended to serve as a backbone for the project's experiments/evaluation tasks. It is primarily based on [Pytorch-Lightning](link-here) framework. 
+This repository contains the training/prediction code for the unimodality project. It is intended to serve as a backbone for the project's experiments/evaluation tasks. It is primarily based on [Pytorch-Lightning](https://lightning.ai/) framework. 
 
 ## Setup
 First, make sure to clone the **exact conda environment** used to reproduce these experiments (you can do it b y running the command `conda create -f env.yml -n <CUSTOM-NAME>`). Then, a quick way to start contributing to the project would be to fork the repository and proceed with **local editable installation** by running the following command at the base folder of the project:
@@ -57,7 +57,7 @@ This module implements the necesary structures needed for data loading. The file
 - val_dataloader: returns the validation set dataloader.
 - predict_dataloader: returns the prediction set dataloader.
 - teardown: called every time a stage ends. Caller sets the parameter `stage` to the corresponding value. This function is used for freeing memory.
-There are of courses other methods defined in the `LightningDataModule` class that are not overriden here. More information is available [here](link).
+There are of courses other methods defined in the `LightningDataModule` class that are not overriden here. More information is available [here](https://lightning.ai/docs/pytorch/stable/data/datamodule.html).
 
 **Important note:** We used `setup` callbacks to load datasets because we don't need them all for training and inference. `prepare_dataset` callback can be used too, but unlike the former, it is called only once. `setup` is called at different stages of training, allowing for loading data only when it is needed.
 ### Setups
@@ -72,12 +72,12 @@ The `clip_module.py` implements the unimodality models' training pipeline using 
 - predition_step: calls the `forward` method.
 - configure_optimizers: implements the optimizers.
 <br />
-Not all of the `LightningModule` class' methods have been overriden by the `ClipModule` class. More information is available [here](link).
+Not all of the `LightningModule` class' methods have been overriden by the `ClipModule` class. More information is available [here](https://lightning.ai/docs/pytorch/stable/common/lightning_module.html).
 **Important note:** Classes derived from `LightningModule` can have any number of parameters. However, passing only the hyperparameters as an  namespace, followed by a call to `save_hyperparameters` function ensures the ability of loading the module from a checkpoint without knowing its class attributes (see file `run_inference.py`, where the ClipModule class is loaded from disk). Failing to do so (such as passing complex structures which cannot be saved as parameters) prevents the loading of the module without calling its `__init__` method, hence necessitating the instantiation of the constructor's arguments. For this reason, we recommend to only pass the hyperparameters to the module and move the models' building logic inside it. 
 ### Tools
 - constants.py: this files contains global variables that all likely to be used by other files/modules.
 - clip_losses.py: this files implements clip loss, which is used by the `ClipModule` class.
-**Important note:** As mentioned above, some training settings involve freezing/removing one of the tx/ph encoders (following the team's request). Encoder removal enforces the use of the embedding as is in the loss function, hence causing a problem of dimensions when it comes to matrix multiplication. To overcome this problem, additional multiplications were performed to get rid of the embeddings' size, hence altering the original clip loss' logic. One possible solution would be to add trainable/frozen projection heads to align the dimensions of loss function's arguments (see example of projection head implementation [here](link)).
+**Important note:** As mentioned above, some training settings involve freezing/removing one of the tx/ph encoders (following the team's request). Encoder removal enforces the use of the embedding as is in the loss function, hence causing a problem of dimensions when it comes to matrix multiplication. To overcome this problem, additional multiplications were performed to get rid of the embeddings' size, hence altering the original clip loss' logic. One possible solution would be to add trainable/frozen projection heads to align the dimensions of loss function's arguments (see example of projection head implementation [here](https://wandb.ai/manan-goel/coco-clip/reports/Implementing-CLIP-With-PyTorch-Lightning--VmlldzoyMzg4Njk1)).
 
 ### Tests
 This folder contains python runners that are used for training and inference. They can be used as examples to implement additonal scripts:
@@ -97,22 +97,10 @@ Current runners use a specific lightning module (`ClipModule`) for both training
 ### tools
 This python module is intended for tools/utilities, namely loss functions and various routines. So far, only clip loss is implemented, but more losses can be added (the Hopfield variant, for instance). If many losses are to be used, a possible solution would be to group them by family (Clip loss family for instance), to avoid having exponentially-growing python files. At last but not least, **the existing ClipLoss class needs to be revisited**, as mentioned in previous sections.
 ## References
+- [Pytorch-Lightning website](https://lightning.ai/)
+- [Pytorch-Lightning module documentation](https://lightning.ai/docs/pytorch/stable/common/lightning_module.html).
+- [Pytorch-Lightning data module documentation](https://lightning.ai/docs/pytorch/stable/data/datamodule.html).
+- [Loading lightning module from checkpoint](https://lightning.ai/docs/pytorch/stable/common/checkpointing_basic.html#lightningmodule-from-checkpoint)
+- [Implementing Clip with lightning](https://wandb.ai/manan-goel/coco-clip/reports/Implementing-CLIP-With-PyTorch-Lightning--VmlldzoyMzg4Njk1)
+- [Using lightning for inference](https://pytorch-lightning.readthedocs.io/en/1.6.5/common/production_inference.html)
 
-```
-@misc{https://doi.org/10.48550/arxiv.2110.08460,
-  doi = {10.48550/ARXIV.2110.08460},
-  url = {https://arxiv.org/abs/2110.08460},
-  author = {Li, Tianda and El Mesbahi, Yassir},
-  keywords = {Computation and Language (cs.CL), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  title = {A Short Study on Compressing Decoder-Based Language Models},
-  publisher = {arXiv},
-  year = {2021},
-  copyright = {arXiv.org perpetual, non-exclusive license}
-}
-
-```
-
-- Loading lightning module from checkpoint: https://lightning.ai/docs/pytorch/stable/common/checkpointing_basic.html#lightningmodule-from-checkpoint 
-- Implementing Clip with lightning: https://wandb.ai/manan-goel/coco-clip/reports/Implementing-CLIP-With-PyTorch-Lightning--VmlldzoyMzg4Njk1
-- Using lightning for inference: https://pytorch-lightning.readthedocs.io/en/1.6.5/common/production_inference.html
--
