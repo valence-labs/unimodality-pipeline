@@ -42,8 +42,8 @@ sbatch scripts/run_clip.sh
 ```
 ### Data
 Two datasets are used for training. They can be found at the directory `/mnt/ps/home/CORP/ihab.bendidi/ondemand/yassir_unimodality`:
-1 -  Transcriptomics: file `huvec_compounds.h5ad`.
-2 -  Phenomics: file `HUVEC-tvn_v11_prox_bias_reduced_PHENOM1-2023-09-28_smiles_4splits_v3_filtered_transcriptomics_molphenix_embeds.parquet`.
+1.  Transcriptomics: file `huvec_compounds.h5ad`.
+2.  Phenomics: file `HUVEC-tvn_v11_prox_bias_reduced_PHENOM1-2023-09-28_smiles_4splits_v3_filtered_transcriptomics_molphenix_embeds.parquet`.
 
 Regarding inference, replogle dataset has been modified by adding a random-float-valued-column `tests` that emulates embeddings. It is located at: `/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/data/replogle_2022.h5ad`. In case this file is not accessible, it can be re-created using the jupyter notebook `notebooks/prepare_replogle_data.ipynb`.
 
