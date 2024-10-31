@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 class MultiModalDataModule(LightningDataModule):
     def __init__(
         self, 
-        multimodal_tx_data_path: str, 
-        multimodal_tx_obsm_key: str, 
-        multimodal_ph_data_path: str, 
+        multimodal_tx_data_path, 
+        multimodal_tx_obsm_key, 
+        multimodal_ph_data_path, 
         evaluation_tx_data: str, 
         evaluation_tx_obsm_key: str, 
         evaluation_tx_filter_controls:bool = False, 
@@ -35,7 +35,7 @@ class MultiModalDataModule(LightningDataModule):
         self.evaluation_tx_data = evaluation_tx_data
         self.evaluation_tx_obsm_key = evaluation_tx_obsm_key
         self.evaluation_tx_filter_controls = evaluation_tx_filter_controls
-        self.evaluation_tx_n_samples = evaluation_tx_n_samples
+        self.evaluation_tx_n_samples = None
         self.batch_size = batch_size
         self.num_workers = num_workers
         

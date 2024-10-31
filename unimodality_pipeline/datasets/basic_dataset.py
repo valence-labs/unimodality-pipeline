@@ -3,9 +3,6 @@ from torch.utils.data import Dataset
 import pandas as pd
 import anndata
 import numpy as np
-import pickle
-import os
-import time
 import logging
 from ..tools.constants import TEST_EXPERIMENTS
 
@@ -31,20 +28,30 @@ class TxDataset(Dataset):
         if (n_samples is not None)  and (len(self.tx_data.obs) >  n_samples):
             self.tx_data = self.tx_data[:n_samples,:]
             logger.info(f"Keeping {len(self.tx_data)} samples...")
-        self.indices = self.tx_data.obs.index.astype(int).tolist()
+        # Reset index to ensure it's sequential
+        self.tx_data.obs.reset_index(drop=True, inplace=True)
+
+        # Use sequential indices
+        self.indices = np.arange(len(self.tx_data)).tolist()
     def __len__(self):
         return len(self.tx_data)
 
     def __getitem__(self, idx):
-        tx_idx = self.indices[idx]
-        return torch.tensor(self.tx_data.obsm[self.obsm_key][tx_idx], dtype=torch.float32)
+        #tx_idx = self.indices[idx]
+        return torch.tensor(self.tx_data.obsm[self.obsm_key][idx], dtype=torch.float32)
 
 
 
+
+# pheno_embedding
+# mp_image_embedding
+# mp_dosage_embedding
 class MultimodalDataset(Dataset):
     def __init__(self, anndata_file, parquet_file, obsm_key, emb_align="pheno_embedding", mode='train'):
         self.emb_align = emb_align
         self.obsm_key = obsm_key
+
+        self.augment = False
         
         # Load anndata file
         self.tx_data = anndata.read_h5ad(anndata_file)
@@ -119,22 +126,35 @@ class MultimodalDataset(Dataset):
     def __getitem__(self, idx):
         
         tx_idx = self.indices[idx]
-        tx_embedding = torch.tensor(self.tx_data.obsm[self.obsm_key][tx_idx], dtype=torch.float32)
+        if self.augment :
+            obsm_key =  self.obsm_key + random.choice(['','CenterScale'])
+        else :
+            obsm_key = self.obsm_key
+        tx_embedding = torch.tensor(self.tx_data.obsm[obsm_key][tx_idx], dtype=torch.float32)
         
         tx_smiles = self.tx_data.obs['canonical_smiles'].iloc[tx_idx]
         tx_concentration = self.tx_data.obs['treatment_concentration'].iloc[tx_idx]
+
+        label = self.tx_data.obs['labels'].iloc[tx_idx]
+        
+        # Ensure label is a scalar
+        if isinstance(label, (np.ndarray, list)):
+            label = label.item()  # Convert to scalar if necessary
+
+        label = torch.tensor(label, dtype=torch.long)
         
         ph_embedding = self.ph_mapping[(tx_smiles, float(tx_concentration))]
         
         ph_embedding = ph_embedding[np.random.randint(0, len(ph_embedding))]
-        return [tx_embedding, ph_embedding]
+        return [tx_embedding, ph_embedding, label]
 
     def on_epoch_end(self):
         # Shuffle indices at the end of each epoch
         np.random.shuffle(self.indices)
 
 def multimodal_collate_fn(batch):
-    views1, views2 = zip(*[(item[0], item[1]) for item in batch])
+    views1, views2, labels = zip(*[(item[0], item[1], item[2]) for item in batch])
     views1 = torch.stack(views1)
     views2 = torch.stack(views2)
-    return views1, views2
+    labels = torch.stack(labels)
+    return views1, views2, labels

@@ -20,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class ClipModule(LightningModule):
+class DCCA(LightningModule):
     def __init__(
         self, 
         hparams: Dict[str, Any],
@@ -69,25 +69,13 @@ class ClipModule(LightningModule):
         self.knn_classifier = WeightedKNNClassifier()
         self.knn_classifier_input = WeightedKNNClassifier()
         
-        # Clip loss
-        
-        self.loss = ClipLoss(
-            gather_distributed=self.hparams.gather_distributed,
-            normalize=self.hparams.normalize,
-            temperature=self.hparams.temperature,
-            no_tx_head=self.hparams.tx_disabled,
-            no_ph_head=self.hparams.ph_disabled,
-        )
-        """
         # DCCA loss
         self.loss = DCCLoss(
             outdim_size=30,
             use_all_singular_values=True,
             epsilon=1e-6,  # You can adjust this value as needed
         )
-        """
-        #self.loss = MultiViewLoss(Wlambda=self.hparams.Wlambda, iters=self.hparams.iters, gamma=self.hparams.gamma)
-        
+
     def linear_CKA(self, z1, z2):
         """Compute the linear CKA between two sets of representations."""
         # Ensure the inputs are centered
@@ -146,22 +134,12 @@ class ClipModule(LightningModule):
         # Alignment loss
         alignment_loss = self.loss(z_tx_aligned, z_ph)
 
-        # Project z_tx_aligned back to original dimension using the fixed projection matrix
-        #z_tx_projected = torch.matmul(z_tx_aligned, self.projection_matrix)
-
-        # Preservation loss (e.g., MSE loss)
-        #preservation_loss = F.mse_loss(z_tx_projected, z_tx_original)
-        # Self-preservation loss using CKA
-        #cka_value = self.linear_CKA(z_tx_aligned, z_tx_original)
-        #preservation_loss = -cka_value  # Negative because we want to maximize CKA
-
         # Total loss
-        loss = alignment_loss #+ self.lambda_preserve_tx * preservation_loss
+        loss = alignment_loss 
 
         # Logging
         self.log('train_loss', loss)
         self.log('alignment_loss', alignment_loss)
-        #self.log('preservation_loss', preservation_loss)
 
         self.knn_classifier.update(train_features=z_tx_aligned, train_targets=labels)
 
@@ -185,14 +163,6 @@ class ClipModule(LightningModule):
         # Alignment loss
         alignment_loss = self.loss(z_tx_aligned, z_ph)
 
-        # Project z_tx_aligned back to original dimension using the fixed projection matrix
-        #z_tx_projected = torch.matmul(z_tx_aligned, self.projection_matrix)
-
-        # Preservation loss (e.g., MSE loss)
-        #preservation_loss = F.mse_loss(z_tx_projected, z_tx_original)
-        # Self-preservation loss using CKA
-        #cka_value = self.linear_CKA(z_tx_aligned, z_tx_original)
-        #preservation_loss = -cka_value  # Negative because we want to maximize CKA
 
         # Total loss
         loss = alignment_loss #+ self.lambda_preserve_tx * preservation_loss
@@ -200,7 +170,6 @@ class ClipModule(LightningModule):
         # Logging
         self.log('val_loss', loss)
         self.log('val_alignment_loss', alignment_loss)
-        #self.log('val_preservation_loss', preservation_loss)
 
         self.knn_classifier.update(test_features=z_tx_aligned, test_targets=labels)
 
@@ -229,18 +198,11 @@ class ClipModule(LightningModule):
             parameters.append({"params": self.tx_encoder.parameters(), "lr": self.hparams.tx_encoder_lr})
 
         optimizer = torch.optim.SGD(parameters, momentum=self.hparams.momentum, weight_decay=self.hparams.weight_decay)
-        """
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode="min",
-            patience=self.hparams.lr_scheduler_patience,
-            factor=self.hparams.lr_scheduler_factor,
-        )
-        """
+
         # Set up the Cosine Annealing scheduler
         lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer,
-            T_max=self.hparams.n_epochs,               # Total number of iterations or epochs
+            T_max=self.hparams.n_epochs,                  # Total number of iterations or epochs
             eta_min=self.hparams.min_lr                # Minimum learning rate
         )
 

@@ -94,6 +94,276 @@ So far, only clip-loss training setup has been implemented. More baselines (SimC
 Current runners use a specific lightning module (`ClipModule`) for both training and inference. We could add more runners as more training modules are implemented, or modify the current code to make a runner module-agnostic (using a dictionary for instance, we could have a mapping string <-> LightningModule class and dynamically instantiate a module using a string passed as argument...). 
 ### Tools
 This python module is intended for tools/utilities, namely loss functions and various routines. So far, only clip loss is implemented, but more losses can be added (the Hopfield variant, for instance). If many losses are to be used, a possible solution would be to group them by family (Clip loss family for instance), to avoid having exponentially-growing python files. At last but not least, **the existing ClipLoss class needs to be revisited**, as mentioned in previous sections.
+## Commands
+### Clip 
+```
+export RUNNER_ARGS=" \
+    --tx_data_path ${TX_DATA_PATH} \
+    --ph_data_path ${PH_DATA_PATH} \
+    --obsm_key ${OBSM_KEY} \
+    --eval_obsm_key ${EVAL_OBSM_KEY} \
+    --n_gpus ${WORLD_SIZE} \
+    --n_epochs 50 \
+    --exp_name ${EXP_NAME} \
+    --wandb_name ${WANDB_PROJECT} \
+    --wandb_dir ${WANDB_DATA_DIR} \
+    --output_dir ${OUTPUT_DIR} \
+    --ph_disabled \
+    --gamma 0.1 \
+    --Wlambda 1000.0 \
+    --lambda_preserve_tx 1000.0 \
+    --lambda_preserve_ph 1000.0 \
+    --save_emb_name Clip \
+    --iters 6 \
+    --do_predict \
+    --ph_output_size 768 \
+    --tx_output_size 768 \
+    --batch_size=1024 \
+    --krc_threshold=0.0 \
+    --min_lr=0.000001 \
+    --temperature_KD=2 \
+    --tx_encoder_lr=0.001 \
+    --seed ${SEED} \
+    --method clip \
+    "
+```
+
+
+### VICReg : 
+
+```
+export RUNNER_ARGS=" \
+    --tx_data_path ${TX_DATA_PATH} \
+    --ph_data_path ${PH_DATA_PATH} \
+    --obsm_key ${OBSM_KEY} \
+    --eval_obsm_key ${EVAL_OBSM_KEY} \
+    --n_gpus ${WORLD_SIZE} \
+    --n_epochs 10 \
+    --exp_name ${EXP_NAME} \
+    --wandb_name ${WANDB_PROJECT} \
+    --wandb_dir ${WANDB_DATA_DIR} \
+    --output_dir ${OUTPUT_DIR} \
+    --gamma 1000 \
+    --Wlambda 0.1 \
+    --save_emb_name VicReg \
+    --iters 10 \
+    --do_predict \
+    --ph_output_size 768 \
+    --tx_output_size 768 \
+    --batch_size=1024 \
+    --krc_threshold=0.0 \
+    --lambda_kl_ph=100 \
+    --lambda_kl_tx=100 \
+    --lambda_preserve_tx=1000 \
+    --alpha=10 \
+    --beta=0.001 \
+    --min_lr=1e-10 \
+    --ph_classifier_lr=1e-07 \
+    --ph_encoder_lr=1e-08 \
+    --temperature_KD=9 \
+    --tx_classifier_lr=0.0001 \
+    --tx_encoder_lr=0.1 \
+    --seed ${SEED} \
+    --method vicreg \
+    "
+```
+
+
+### SigClip 
+
+```
+export RUNNER_ARGS=" \
+    --tx_data_path ${TX_DATA_PATH} \
+    --ph_data_path ${PH_DATA_PATH} \
+    --obsm_key ${OBSM_KEY} \
+    --eval_obsm_key ${EVAL_OBSM_KEY} \
+    --n_gpus ${WORLD_SIZE} \
+    --n_epochs 10 \
+    --exp_name ${EXP_NAME} \
+    --wandb_name ${WANDB_PROJECT} \
+    --wandb_dir ${WANDB_DATA_DIR} \
+    --output_dir ${OUTPUT_DIR} \
+    --gamma 1000 \
+    --Wlambda 0.1 \
+    --save_emb_name Sigclip \
+    --iters 10 \
+    --do_predict \
+    --ph_output_size 768 \
+    --tx_output_size 768 \
+    --batch_size=1024 \
+    --krc_threshold=0.0 \
+    --lambda_kl_ph=100 \
+    --lambda_kl_tx=100 \
+    --lambda_preserve_tx=1000 \
+    --alpha=10 \
+    --beta=0.001 \
+    --min_lr=1e-10 \
+    --ph_classifier_lr=1e-07 \
+    --ph_encoder_lr=1e-08 \
+    --temperature_KD=9 \
+    --tx_classifier_lr=0.0001 \
+    --tx_encoder_lr=0.1 \
+    --seed ${SEED} \
+    --method sigclip \
+    "
+```
+
+
+
+### Shake 
+
+```
+export RUNNER_ARGS=" \
+    --tx_data_path ${TX_DATA_PATH} \
+    --ph_data_path ${PH_DATA_PATH} \
+    --obsm_key ${OBSM_KEY} \
+    --eval_obsm_key ${EVAL_OBSM_KEY} \
+    --n_gpus ${WORLD_SIZE} \
+    --n_epochs 10 \
+    --exp_name ${EXP_NAME} \
+    --wandb_name ${WANDB_PROJECT} \
+    --wandb_dir ${WANDB_DATA_DIR} \
+    --output_dir ${OUTPUT_DIR} \
+    --gamma 1000 \
+    --Wlambda 0.1 \
+    --save_emb_name SHAKE \
+    --iters 10 \
+    --do_predict \
+    --ph_output_size 768 \
+    --tx_output_size 768 \
+    --batch_size=1024 \
+    --krc_threshold=0.0 \
+    --lambda_kl_ph=100 \
+    --lambda_kl_tx=100 \
+    --lambda_preserve_tx=1000 \
+    --alpha=10 \
+    --beta=0.001 \
+    --min_lr=1e-10 \
+    --ph_classifier_lr=1e-07 \
+    --ph_encoder_lr=1e-08 \
+    --temperature_KD=9 \
+    --tx_classifier_lr=0.0001 \
+    --tx_encoder_lr=0.1 \
+    --seed ${SEED} \
+    --method shake \
+    "
+
+```
+
+
+### KD 
+
+```
+export RUNNER_ARGS=" \
+    --tx_data_path ${TX_DATA_PATH} \
+    --ph_data_path ${PH_DATA_PATH} \
+    --obsm_key ${OBSM_KEY} \
+    --eval_obsm_key ${EVAL_OBSM_KEY} \
+    --n_gpus ${WORLD_SIZE} \
+    --n_epochs 10 \
+    --exp_name ${EXP_NAME} \
+    --wandb_name ${WANDB_PROJECT} \
+    --wandb_dir ${WANDB_DATA_DIR} \
+    --output_dir ${OUTPUT_DIR} \
+    --gamma 1000 \
+    --Wlambda 0.1 \
+    --save_emb_name KD \
+    --iters 10 \
+    --do_predict \
+    --ph_output_size 768 \
+    --tx_output_size 768 \
+    --batch_size=1024 \
+    --krc_threshold=0.0 \
+    --lambda_kl_ph=100 \
+    --lambda_kl_tx=100 \
+    --lambda_preserve_tx=1000 \
+    --alpha=10 \
+    --beta=0.001 \
+    --min_lr=1e-10 \
+    --ph_classifier_lr=1e-07 \
+    --ph_encoder_lr=1e-08 \
+    --temperature_KD=9 \
+    --tx_classifier_lr=0.0001 \
+    --tx_encoder_lr=0.1 \
+    --seed ${SEED} \
+    --method kd \
+    "
+```
+
+### C2KD 
+
+```
+export RUNNER_ARGS=" \
+    --tx_data_path ${TX_DATA_PATH} \
+    --ph_data_path ${PH_DATA_PATH} \
+    --obsm_key ${OBSM_KEY} \
+    --eval_obsm_key ${EVAL_OBSM_KEY} \
+    --n_gpus ${WORLD_SIZE} \
+    --n_epochs 30 \
+    --exp_name ${EXP_NAME} \
+    --wandb_name ${WANDB_PROJECT} \
+    --wandb_dir ${WANDB_DATA_DIR} \
+    --output_dir ${OUTPUT_DIR} \
+    --gamma 0.1 \
+    --Wlambda 1000.0 \
+    --lambda_preserve_tx 1000.0 \
+    --lambda_preserve_ph 1000.0 \
+    --save_emb_name C2kdOptim \
+    --iters 6 \
+    --do_predict \
+    --ph_output_size 768 \
+    --tx_output_size 768 \
+    --batch_size=1024 \
+    --krc_threshold=0.0 \
+    --min_lr=1e-07 \
+    --ph_classifier_lr=0.001 \
+    --ph_encoder_lr=1e-06 \
+    --temperature_KD=2 \
+    --tx_classifier_lr=1e-05 \
+    --tx_encoder_lr=0.1 \
+    --seed ${SEED} \
+    --method c2kd \
+    "
+```
+
+
+
+
+
+### DCCA 
+
+```
+export RUNNER_ARGS=" \
+    --tx_data_path ${TX_DATA_PATH} \
+    --ph_data_path ${PH_DATA_PATH} \
+    --obsm_key ${OBSM_KEY} \
+    --eval_obsm_key ${EVAL_OBSM_KEY} \
+    --n_gpus ${WORLD_SIZE} \
+    --n_epochs 50 \
+    --exp_name ${EXP_NAME} \
+    --wandb_name ${WANDB_PROJECT} \
+    --wandb_dir ${WANDB_DATA_DIR} \
+    --output_dir ${OUTPUT_DIR} \
+    --ph_disabled \
+    --gamma 0.1 \
+    --Wlambda 1000.0 \
+    --lambda_preserve_tx 1000.0 \
+    --lambda_preserve_ph 1000.0 \
+    --save_emb_name DCC \
+    --iters 6 \
+    --do_predict \
+    --ph_output_size 768 \
+    --tx_output_size 768 \
+    --batch_size=2048 \
+    --krc_threshold=0.0 \
+    --min_lr=0.0000000001 \
+    --temperature_KD=2 \
+    --tx_encoder_lr=0.000001 \
+    --seed ${SEED} \
+    --method dcca \
+    "
+```
+
 ## References
 - [Pytorch-Lightning website](https://lightning.ai/)
 - [Pytorch-Lightning module documentation](https://lightning.ai/docs/pytorch/stable/common/lightning_module.html).

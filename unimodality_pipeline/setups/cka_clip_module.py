@@ -7,10 +7,7 @@ from typing import Optional, Dict, Any
 from pytorch_lightning import LightningModule
 from ..models.mlp import MLP
 from ..tools.clip_losses import ClipLoss
-from ..tools.dcc_loss import DCCLoss
 from ..tools.ot_loss import MultiViewLoss
-
-from ..eval.knn import WeightedKNNClassifier
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -20,7 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class ClipModule(LightningModule):
+class CKAClipModule(LightningModule):
     def __init__(
         self, 
         hparams: Dict[str, Any],
@@ -51,23 +48,7 @@ class ClipModule(LightningModule):
         self.ph_encoder_train_mode = (self.ph_encoder is not None)
 
 
-        self.lambda_preserve_tx = self.hparams.lambda_preserve_tx
-        self.lambda_preserve_ph = self.hparams.lambda_preserve_ph
-
-        # Initialize the fixed projection matrix as a buffer
-        aligned_dim = self.hparams.tx_output_size  # Dimension of z_tx_aligned (e.g., 768)
-        original_dim = self.hparams.tx_input_size  # Dimension of z_tx_original (e.g., 256)
-
-        # Create the projection matrix
-        projection_matrix = torch.randn(aligned_dim, original_dim)
-        projection_matrix = projection_matrix / torch.norm(projection_matrix, dim=0, keepdim=True)  # Normalize columns
-
-        # Register the projection matrix as a buffer
-        self.register_buffer('projection_matrix', projection_matrix)
-
-        # Knn
-        self.knn_classifier = WeightedKNNClassifier()
-        self.knn_classifier_input = WeightedKNNClassifier()
+        self.lambda_preserve = self.hparams.lambda_preserve_tx
         
         # Clip loss
         
@@ -78,15 +59,6 @@ class ClipModule(LightningModule):
             no_tx_head=self.hparams.tx_disabled,
             no_ph_head=self.hparams.ph_disabled,
         )
-        """
-        # DCCA loss
-        self.loss = DCCLoss(
-            outdim_size=30,
-            use_all_singular_values=True,
-            epsilon=1e-6,  # You can adjust this value as needed
-        )
-        """
-        #self.loss = MultiViewLoss(Wlambda=self.hparams.Wlambda, iters=self.hparams.iters, gamma=self.hparams.gamma)
         
     def linear_CKA(self, z1, z2):
         """Compute the linear CKA between two sets of representations."""
@@ -135,38 +107,28 @@ class ClipModule(LightningModule):
         x_tx, x_ph, labels = batch
 
         # Original transcriptomics embeddings (before alignment)
-        z_tx_original = x_tx  # Assuming x_tx is already an embedding; if not, pass through a frozen encoder
+        z_tx_original = x_tx  
 
         # Aligned transcriptomics embeddings
         z_tx_aligned = self.tx_encoder(x_tx) if self.tx_encoder is not None else x_tx
 
-        # Phenomics embeddings (assuming ph_encoder is frozen)
+        # Phenomics embeddings 
         z_ph = self.ph_encoder(x_ph) if self.ph_encoder is not None else x_ph
 
         # Alignment loss
         alignment_loss = self.loss(z_tx_aligned, z_ph)
 
-        # Project z_tx_aligned back to original dimension using the fixed projection matrix
-        #z_tx_projected = torch.matmul(z_tx_aligned, self.projection_matrix)
-
-        # Preservation loss (e.g., MSE loss)
-        #preservation_loss = F.mse_loss(z_tx_projected, z_tx_original)
         # Self-preservation loss using CKA
-        #cka_value = self.linear_CKA(z_tx_aligned, z_tx_original)
-        #preservation_loss = -cka_value  # Negative because we want to maximize CKA
+        cka_value = self.linear_CKA(z_tx_aligned, z_tx_original)
+        preservation_loss = -cka_value  # Negative because we want to maximize CKA
 
         # Total loss
-        loss = alignment_loss #+ self.lambda_preserve_tx * preservation_loss
+        loss = alignment_loss + self.lambda_preserve * preservation_loss
 
         # Logging
         self.log('train_loss', loss)
         self.log('alignment_loss', alignment_loss)
-        #self.log('preservation_loss', preservation_loss)
-
-        self.knn_classifier.update(train_features=z_tx_aligned, train_targets=labels)
-
-        if self.current_epoch == 0 :
-            self.knn_classifier_input.update(train_features=z_tx_original, train_targets=labels)
+        self.log('preservation_loss', preservation_loss)
 
         return loss
 
@@ -174,49 +136,30 @@ class ClipModule(LightningModule):
         x_tx, x_ph, labels = batch
 
         # Original transcriptomics embeddings (before alignment)
-        z_tx_original = x_tx  # Assuming x_tx is already an embedding; if not, pass through a frozen encoder
+        z_tx_original = x_tx  
 
         # Aligned transcriptomics embeddings
         z_tx_aligned = self.tx_encoder(x_tx) if self.tx_encoder is not None else x_tx
 
-        # Phenomics embeddings (assuming ph_encoder is frozen)
+        # Phenomics embeddings 
         z_ph = self.ph_encoder(x_ph) if self.ph_encoder is not None else x_ph
 
         # Alignment loss
         alignment_loss = self.loss(z_tx_aligned, z_ph)
 
-        # Project z_tx_aligned back to original dimension using the fixed projection matrix
-        #z_tx_projected = torch.matmul(z_tx_aligned, self.projection_matrix)
-
-        # Preservation loss (e.g., MSE loss)
-        #preservation_loss = F.mse_loss(z_tx_projected, z_tx_original)
         # Self-preservation loss using CKA
-        #cka_value = self.linear_CKA(z_tx_aligned, z_tx_original)
-        #preservation_loss = -cka_value  # Negative because we want to maximize CKA
+        cka_value = self.linear_CKA(z_tx_aligned, z_tx_original)
+        preservation_loss = -cka_value  # Negative because we want to maximize CKA
 
         # Total loss
-        loss = alignment_loss #+ self.lambda_preserve_tx * preservation_loss
+        loss = alignment_loss + self.lambda_preserve * preservation_loss
 
         # Logging
         self.log('val_loss', loss)
         self.log('val_alignment_loss', alignment_loss)
-        #self.log('val_preservation_loss', preservation_loss)
-
-        self.knn_classifier.update(test_features=z_tx_aligned, test_targets=labels)
-
-        if self.current_epoch == 0 :
-            self.knn_classifier_input.update(test_features=z_tx_original, test_targets=labels)
+        self.log('val_preservation_loss', preservation_loss)
 
         return loss
-
-    def on_validation_epoch_end(self):
-        knn_top1, knn_top5 = self.knn_classifier.compute()
-        self.log('knn_top1', knn_top1)
-        self.log('knn_top5', knn_top5)
-        if self.current_epoch == 0 :
-            knn_top1, knn_top5 = self.knn_classifier_input.compute()
-            self.log('original_knn_top1', knn_top1)
-            self.log('original_knn_top5', knn_top5)
     
     def predition_step(self, batch, batch_idx):
         return self.tx_encoder(batch) if self.tx_encoder is not None else batch
@@ -229,18 +172,11 @@ class ClipModule(LightningModule):
             parameters.append({"params": self.tx_encoder.parameters(), "lr": self.hparams.tx_encoder_lr})
 
         optimizer = torch.optim.SGD(parameters, momentum=self.hparams.momentum, weight_decay=self.hparams.weight_decay)
-        """
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode="min",
-            patience=self.hparams.lr_scheduler_patience,
-            factor=self.hparams.lr_scheduler_factor,
-        )
-        """
+
         # Set up the Cosine Annealing scheduler
         lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer,
-            T_max=self.hparams.n_epochs,               # Total number of iterations or epochs
+            T_max=self.hparams.n_epochs,                  # Total number of iterations or epochs
             eta_min=self.hparams.min_lr                # Minimum learning rate
         )
 
@@ -249,4 +185,3 @@ class ClipModule(LightningModule):
             "lr_scheduler": lr_scheduler,
             "monitor": "val_loss",
         }
-    
