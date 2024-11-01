@@ -46,7 +46,8 @@ class KDModule(LightningModule):
 
         # Teacher Classifier Head (Fixed, Pretrained Teacher)
         self.ph_classifier = nn.Linear(self.hparams.ph_input_size, self.num_classes)
-        pretrained_ph_ckpt_path = './experiments/save_ph_encoder/save_ph_encoder/epoch=03-val_loss=5.42-val_acc=0.00.ckpt'
+        #pretrained_ph_ckpt_path = '/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/data/save_ph_encoder/save_ph_encoder/epoch=03-val_loss=5.42-val_acc=0.00.ckpt'
+        pretrained_ph_ckpt_path = self.hparams.pretrained_weights
 
 
         # Load the pretrained ph_classifier

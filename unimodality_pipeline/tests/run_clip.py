@@ -121,6 +121,7 @@ def main():
 
     parser.add_argument('--seed', type=int, default=42, help='Random Seed')
     parser.add_argument('--method', type=str, choices=['clip', 'kd', 'c2kd', 'sslc2kd', 'ph_supervised', 'shake', 'vicreg', 'sigclip', 'dcca', 'cka_clip', 'clipped_dino'], default='clipped_dino', help='Choose the method to use')
+    parser.add_argument('--pretrained_weights', type=str, default=None, help='Pretrained weights for shake and kd')
 
 
     

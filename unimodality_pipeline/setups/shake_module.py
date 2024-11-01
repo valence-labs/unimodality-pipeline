@@ -60,7 +60,8 @@ class ShakeModule(LightningModule):
         # Teacher Classifier Head (Fixed, Pretrained Teacher)
         # Assuming the teacher classifier is pre-trained and fixed
         # If you have a pre-trained classifier, you can load it here
-        pretrained_ph_ckpt_path = './experiments/save_ph_encoder/save_ph_encoder/epoch=03-val_loss=5.42-val_acc=0.00.ckpt'
+        #pretrained_ph_ckpt_path = './experiments/save_ph_encoder/save_ph_encoder/epoch=03-val_loss=5.42-val_acc=0.00.ckpt'
+        pretrained_ph_ckpt_path = self.hparams.pretrained_weights
 
         ckpt = torch.load(pretrained_ph_ckpt_path, map_location=self.device)
         # Extract the state dict

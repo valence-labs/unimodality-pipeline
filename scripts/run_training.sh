@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=augmented_clip_42_1e-3
+#SBATCH --job-name=augmented_clip_disabled_ph
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=32
@@ -7,35 +7,8 @@
 #SBATCH --gpus-per-task=h100:1
 #SBATCH --mem=512G
 #SBATCH --time=5:00:00
-#SBATCH --output=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/augmented_clip_42_1e-3.out
-#SBATCH --error=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/augmented_clip_42_1e-3.out
-
-#SBATCH --array=1-225%50  # Update 225 to the total number of combinations
-
-
-# Define parameter lists
-SEEDS=(42 45 66 88 129)
-PH_ENCODER_LR_LIST=(1e-1 1e-2 1e-3 1e-4 1e-5 1e-6 1e-7 1e-8 1e-9 1e-10)
-METHODS=('clip' 'kd' 'c2kd' 'sslc2kd' 'ph_supervised' 'shake' 'vicreg' 'sigclip' 'dcca' 'cka_clip' 'clipped_dino')
-
-# Calculate total combinations
-total_seeds=${#seed_list[@]}
-total_tx_lrs=${#tx_encoder_lr_list[@]}
-total_class_lrs=${#classifier_lr_list[@]}
-
-total_jobs=$((total_seeds * total_tx_lrs * total_class_lrs))
-
-# Calculate indices for each parameter
-task_id=$((SLURM_ARRAY_TASK_ID - 1))
-seed_index=$((task_id / (total_tx_lrs * total_class_lrs)))
-tx_lr_index=$(( (task_id / total_class_lrs) % total_tx_lrs ))
-class_lr_index=$((task_id % total_class_lrs))
-
-# Get the parameter values
-seed=${seed_list[$seed_index]}
-tx_encoder_lr=${tx_encoder_lr_list[$tx_lr_index]}
-classifier_lr=${classifier_lr_list[$class_lr_index]}
-
+#SBATCH --output=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/augmented_clip_disabled_ph.out
+#SBATCH --error=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/augmented_clip_disabled_ph.out
 
 # In a SLURM job, you CANNOT use `conda activate` and instead MUST use:
 #source ${HOME_DIR}/.bashrc
