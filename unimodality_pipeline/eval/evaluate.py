@@ -55,7 +55,7 @@ def evaluate(args, system, trainer, logger, wb):
 
         logger.info(f">> Logging scores to wandb...")
         for dataset, result in zip(datasets, results):
-            wb.log({'l1000_' + dataset: result})
+            wb.log({f"{f}_{dataset}": result})
             if 'CORUM' in dataset :
                 good_results.append(result)
             if 'HuMAP' in dataset :

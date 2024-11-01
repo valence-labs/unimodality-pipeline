@@ -16,7 +16,7 @@
 export SEEDS=(42 45 66 88 129)
 export PH_ENCODER_LR_LIST=(1e-1 1e-2 1e-3 1e-4 1e-5 1e-6 1e-7 1e-8 1e-9 1e-10)
 #export METHODS=('clip' 'kd' 'c2kd' 'sslc2kd' 'ph_supervised' 'shake' 'vicreg' 'sigclip' 'dcca' 'cka_clip' 'clipped_dino')
-export METHODS=('clip' 'vicreg' 'sigclip' 'shake' 'kd' 'c2kd' 'dcca')
+export METHODS=('clip' 'vicreg' 'sigclip' 'shake' 'c2kd' 'dcca')
 
 # Calculate total combinations
 export N_SEEDS=${#SEEDS[@]}
