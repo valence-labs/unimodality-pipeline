@@ -10,13 +10,12 @@
 #SBATCH --output=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/augmented_clip_ablation_%j.out
 #SBATCH --error=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/augmented_clip_ablation_%j.out
 
-#SBATCH --array=1-350%50  # Update 225 to the total number of combinations
+#SBATCH --array=1-300%100  # Update 225 to the total number of combinations
 
 # Define parameter lists
 export SEEDS=(42 45 66 88 129)
-export PH_ENCODER_LR_LIST=(1e-1 1e-2 1e-3 1e-4 1e-5 1e-6 1e-7 1e-8 1e-9 1e-10)
-#export METHODS=('clip' 'kd' 'c2kd' 'sslc2kd' 'ph_supervised' 'shake' 'vicreg' 'sigclip' 'dcca' 'cka_clip' 'clipped_dino')
-export METHODS=('clip' 'vicreg' 'sigclip' 'shake' 'c2kd' 'dcca')
+export PH_ENCODER_LR_LIST=(5e-2)
+export METHODS=('clip' 'vicreg' 'sigclip' 'c2kd' 'dcca')
 
 # Calculate total combinations
 export N_SEEDS=${#SEEDS[@]}
@@ -168,7 +167,7 @@ declare -A MIN_LR=(
 )
 
 declare -A PH_CLASSIFIER_LR=(
-    ["clip"]=
+    ["clip"]=1e-7
     ["vicreg"]=1e-7
     ["sigclip"]=1e-7
     ["shake"]=1e-7
@@ -207,14 +206,23 @@ declare -A TX_ENCODER_LR=(
     ["dcca"]=1e-6
 )
 
+declare -A PH_ENCODER_LR=(
+    ["clip"]=1e-3
+    ["vicreg"]=1e-1
+    ["sigclip"]=1e-1
+    ["shake"]=1e-1
+    ["kd"]=1e-1
+    ["c2kd"]=1e-1
+    ["dcca"]=1e-6
+)
 declare -A PRETRAINED_WEIGHTS=(
-    ["clip"]=
-    ["vicreg"]=
-    ["sigclip"]=
+    ["clip"]=None
+    ["vicreg"]=None
+    ["sigclip"]=None
     ["shake"]='/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/data/save_ph_encoder/save_ph_encoder/epoch=03-val_loss=5.42-val_acc=0.00.ckpt'
     ["kd"]='/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/data/save_ph_encoder/save_ph_encoder/epoch=03-val_loss=5.42-val_acc=0.00.ckpt'
-    ["c2kd"]=
-    ["dcca"]=
+    ["c2kd"]=None
+    ["dcca"]=None
 )
 
 # Use the exported lambda values
@@ -248,7 +256,6 @@ export RUNNER_ARGS=" \
     --tx_classifier_lr ${TX_CLASSIFIER_LR[$METHOD]} \
     --tx_encoder_lr ${TX_ENCODER_LR[$METHOD]} \
     --ph_encoder_lr ${PH_ENCODER_LR} \
-    --pretrained_weights ${PRETRAINED_WEIGHTS[$METHOD]} \
     --seed ${SEED} \
     --method ${METHOD} \
     "

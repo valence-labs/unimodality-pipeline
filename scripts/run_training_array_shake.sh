@@ -3,36 +3,36 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=32
-#SBATCH --gpus-per-node=a100:1
-#SBATCH --gpus-per-task=a100:1
+#SBATCH --gpus-per-node=h100:1
+#SBATCH --gpus-per-task=h100:1
 #SBATCH --mem=512G
 #SBATCH --time=5:00:00
-#SBATCH --output=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/augmented_clip_ablation_ph_disabled_%j.out
-#SBATCH --error=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/augmented_clip_ablation_ph_disabled_%j.out
+#SBATCH --output=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/augmented_clip_ablation_%j.out
+#SBATCH --error=/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/out/augmented_clip_ablation_%j.out
 
-#SBATCH --array=1-25%25  # Update 225 to the total number of combinations
+#SBATCH --array=1-5%5  # Update 225 to the total number of combinations
 
 # Define parameter lists
+#export PH_CLASSIFIER_LR_LIST=(1e-1 1e-2 1e-3 1e-4 1e-5 1e-6 1e-7 1e-8 1e-9 1e-10)
 export SEEDS=(42 45 66 88 129)
-export PH_ENCODER_LR_LIST=(1e-1)
-#export METHODS=('clip' 'kd' 'c2kd' 'sslc2kd' 'ph_supervised' 'shake' 'vicreg' 'sigclip' 'dcca' 'cka_clip' 'clipped_dino')
-export METHODS=('clip' 'vicreg' 'sigclip' 'c2kd' 'dcca')
+export PH_CLASSIFIER_LR_LIST=(5e-2)
+export METHODS=('shake')
 
 # Calculate total combinations
 export N_SEEDS=${#SEEDS[@]}
-export N_PH_ENCODER_LR=${#PH_ENCODER_LR_LIST[@]}
+export N_PH_CLASSIFIER_LR=${#PH_CLASSIFIER_LR_LIST[@]}
 export N_METHODS=${#METHODS[@]}
 
-export N_JOBS=$((N_SEEDS * N_PH_ENCODER_LR * N_METHODS))
+export N_JOBS=$((N_SEEDS * N_PH_CLASSIFIER_LR * N_METHODS))
 
 # Calculate indices for each parameter
 export TASK_ID=$((SLURM_ARRAY_TASK_ID - 1))
-export SEED_ID=$((TASK_ID / (N_PH_ENCODER_LR * N_METHODS)))
-export PH_ENCODER_LR_ID=$(( (TASK_ID / N_METHODS) % N_PH_ENCODER_LR ))
+export SEED_ID=$((TASK_ID / (N_PH_CLASSIFIER_LR * N_METHODS)))
+export PH_CLASSIFIER_LR_ID=$(( (TASK_ID / N_METHODS) % N_PH_CLASSIFIER_LR ))
 export METHOD_ID=$((TASK_ID % N_METHODS))
 
 export SEED=${SEEDS[$SEED_ID]}
-export PH_ENCODER_LR=${PH_ENCODER_LR_LIST[$PH_ENCODER_LR_ID]}
+export PH_CLASSIFIER_LR=${PH_CLASSIFIER_LR_LIST[$PH_CLASSIFIER_LR_ID]}
 export METHOD=${METHODS[$METHOD_ID]}
 
 # In a SLURM job, you CANNOT use `conda activate` and instead MUST use:
@@ -41,7 +41,7 @@ export METHOD=${METHODS[$METHOD_ID]}
 #mamba activate unimodality
 
 ### General
-export EXP_NAME="ablation_augmented_${METHOD}_${SEED}_PH_DISABLED"
+export EXP_NAME="ablation_augmented_${METHOD}_${SEED}_${PH_CLASSIFIER_LR}"
 
 ### Environment
 export CUDA_HOME='/cm/shared/apps/cuda12.1/toolkit/12.1.1'
@@ -95,6 +95,8 @@ export LAMBDA_PRESERVE_PH=1000.0
 export TX_OUTPUT_SIZE=768
 export PH_OUTPUT_SIZE=768
 export KRC_THRESHOLD=0.0
+export PH_ENCODER_LR=1e-8
+
 
 
 declare -A BATCH_SIZE=(
@@ -167,16 +169,6 @@ declare -A MIN_LR=(
     ["dcca"]=1e-10
 )
 
-declare -A PH_CLASSIFIER_LR=(
-    ["clip"]=1e-7
-    ["vicreg"]=1e-7
-    ["sigclip"]=1e-7
-    ["shake"]=1e-7
-    ["kd"]=1e-7
-    ["c2kd"]=1e-3
-    ["dcca"]=
-)
-
 declare -A TEMPERATURE_KD=(
     ["clip"]=2
     ["vicreg"]=9
@@ -207,7 +199,15 @@ declare -A TX_ENCODER_LR=(
     ["dcca"]=1e-6
 )
 
-
+declare -A PRETRAINED_WEIGHTS=(
+    ["clip"]=
+    ["vicreg"]=
+    ["sigclip"]=
+    ["shake"]='/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/data/save_ph_encoder/save_ph_encoder/epoch=03-val_loss=5.42-val_acc=0.00.ckpt'
+    ["kd"]='/mnt/ps/home/CORP/yassir.elmesbahi/project/unimodality_pipeline/data/save_ph_encoder/save_ph_encoder/epoch=03-val_loss=5.42-val_acc=0.00.ckpt'
+    ["c2kd"]=
+    ["dcca"]=
+)
 
 # Use the exported lambda values
 export RUNNER_ARGS=" \
@@ -235,19 +235,18 @@ export RUNNER_ARGS=" \
     --batch_size ${BATCH_SIZE[$METHOD]} \
     --krc_threshold ${KRC_THRESHOLD} \
     --min_lr ${MIN_LR[$METHOD]} \
-    --ph_classifier_lr ${PH_CLASSIFIER_LR[$METHOD]} \
+    --ph_classifier_lr ${PH_CLASSIFIER_LR} \
     --temperature_KD ${TEMPERATURE_KD[$METHOD]} \
     --tx_classifier_lr ${TX_CLASSIFIER_LR[$METHOD]} \
     --tx_encoder_lr ${TX_ENCODER_LR[$METHOD]} \
     --ph_encoder_lr ${PH_ENCODER_LR} \
+    --pretrained_weights ${PRETRAINED_WEIGHTS[$METHOD]} \
     --seed ${SEED} \
     --method ${METHOD} \
-    --ph_disabled \
     "
 
 export PYTHON_LAUNCHER="python \
 "
-
 
 # This step is necessary because accelerate launch does not handle multiline arguments properly
 export CMD="${PYTHON_LAUNCHER} ${RUNNER} ${RUNNER_ARGS}" 

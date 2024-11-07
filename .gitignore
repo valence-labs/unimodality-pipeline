@@ -9,4 +9,5 @@ unimodality_pipeline/models/__pycache__
 unimodality_pipeline/setups/__pycache__
 unimodality_pipeline/tools/__pycache__
 unimodality_pipeline/tests/__pycache__
+unimodality_pipeline/eval/__pycache__
 

@@ -197,12 +197,13 @@ def main():
         dirpath=f'{os.path.join(args.output_dir, args.exp_name)}',
         monitor="val_loss",
         filename="{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}",
-        save_top_k=3,
+        save_top_k=1,
         mode="min"
         )
     pbar = TQDMProgressBar(refresh_rate=1)
     lr_monitor = LearningRateMonitor(logging_interval='step')
     callbacks = [ckpt_cb, pbar, lr_monitor]
+    #callbacks = [pbar, lr_monitor]
 
     wandb_logger = WandbLogger(
         project=args.wandb_name,
